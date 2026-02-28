@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Cold Mail</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root { --sidebar-width: 250px; }
+        body { min-height: 100vh; background-color: #f8f9fa; }
+        .sidebar {
+            position: fixed; top: 0; left: 0; height: 100vh;
+            width: var(--sidebar-width);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px 0; z-index: 1000;
+        }
+        .sidebar .brand {
+            color: white; font-size: 1.5rem; font-weight: bold;
+            padding: 0 20px 30px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8); padding: 12px 20px;
+            margin: 4px 10px; border-radius: 8px; transition: all 0.3s;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background: rgba(255,255,255,0.2); color: white;
+        }
+        .sidebar .nav-link i { margin-right: 10px; width: 20px; }
+        .main-content { margin-left: var(--sidebar-width); padding: 30px; }
+        .card { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        .stat-card { transition: transform 0.3s; }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-icon {
+            width: 60px; height: 60px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+<!-- Sidebar -->
+<nav class="sidebar">
+    <div class="brand">
+        <i class="bi bi-envelope-paper-heart"></i> Cold Mail
+    </div>
+    <ul class="nav flex-column">
+        <li class="nav-item">
+            <a class="nav-link active" href="/"><i class="bi bi-speedometer2"></i> Dashboard</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/templates"><i class="bi bi-file-earmark-text"></i> Templates</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/recipients"><i class="bi bi-people"></i> Recipients</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/send"><i class="bi bi-send"></i> Send Emails</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/logs"><i class="bi bi-journal-text"></i> Email Logs</a>
+        </li>
+    </ul>
+</nav>
+
+<!-- Main Content -->
+<main class="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Dashboard</h2>
+        <span class="text-muted">Welcome to Cold Mail Automation</span>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stat-icon bg-primary bg-opacity-10 text-primary me-3">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0" th:text="${totalRecipients}">0</h3>
+                        <small class="text-muted">Total Recipients</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stat-icon bg-warning bg-opacity-10 text-warning me-3">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0" th:text="${pendingCount}">0</h3>
+                        <small class="text-muted">Pending</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stat-icon bg-success bg-opacity-10 text-success me-3">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0" th:text="${sentCount}">0</h3>
+                        <small class="text-muted">Emails Sent</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stat-icon bg-info bg-opacity-10 text-info me-3">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0" th:text="${interviewCount}">0</h3>
+                        <small class="text-muted">Interviews</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stat-icon bg-secondary bg-opacity-10 text-secondary me-3">
+                        <i class="bi bi-reply"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0" th:text="${repliedCount}">0</h3>
+                        <small class="text-muted">Replied</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stat-icon bg-danger bg-opacity-10 text-danger me-3">
+                        <i class="bi bi-x-circle"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0" th:text="${failedCount}">0</h3>
+                        <small class="text-muted">Failed</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stat-icon me-3" style="background-color: rgba(102, 126, 234, 0.1); color: #667eea;">
+                        <i class="bi bi-envelope"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0" th:text="${totalEmails}">0</h3>
+                        <small class="text-muted">Total Emails</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stat-icon bg-dark bg-opacity-10 text-dark me-3">
+                        <i class="bi bi-file-text"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0" th:text="${templateCount}">0</h3>
+                        <small class="text-muted">Templates</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="card">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0"><i class="bi bi-activity me-2"></i>Recent Activity</h5>
+        </div>
+        <div class="card-body">
+            <div th:if="${recentLogs == null or recentLogs.empty}" class="text-center text-muted py-4">
+                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                <p class="mt-2">No emails sent yet. <a href="/send">Send your first email!</a></p>
+            </div>
+            <div class="table-responsive" th:if="${recentLogs != null and !recentLogs.empty}">
+                <table class="table table-hover">
+                    <thead>
+                    <tr>
+                        <th>Recipient</th>
+                        <th>Subject</th>
+                        <th>Status</th>
+                        <th>Sent At</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="log : ${recentLogs}">
+                        <td>
+                            <strong th:text="${log.recipient.name != null} ? ${log.recipient.name} : 'N/A'">Name</strong><br>
+                            <small class="text-muted" th:text="${log.recipient.email}">email</small>
+                        </td>
+                        <td th:text="${log.subject}">Subject</td>
+                        <td>
+                            <span class="badge bg-success" th:if="${log.status.name() == 'SUCCESS'}">SUCCESS</span>
+                            <span class="badge bg-danger" th:if="${log.status.name() == 'FAILED'}">FAILED</span>
+                        </td>
+                        <td th:text="${#temporals.format(log.sentAt, 'MMM dd, HH:mm')}">Date</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

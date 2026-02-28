@@ -1,0 +1,51 @@
+# Compiled class files
+target/
+
+# IDE - IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# IDE - Eclipse
+.classpath
+.project
+.settings/
+
+# IDE - VS Code
+.vscode/
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Database files (H2 local database)
+data/
+*.db
+*.mv.db
+*.trace.db
+
+# Logs
+*.log
+logs/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Environment files (NEVER commit credentials!)
+.env
+*.env
+application-local.yml
+application-prod.yml
+
+# Package files
+*.jar
+*.war
+*.ear
+
+# Temporary files
+*.tmp
+*.temp
+*.swp

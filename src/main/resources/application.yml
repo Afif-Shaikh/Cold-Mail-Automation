@@ -1,0 +1,60 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: cold-mail-automation
+
+  # H2 Database Configuration
+  datasource:
+    url: jdbc:h2:file:./data/coldmail_db
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  # H2 Console (Access at http://localhost:8080/h2-console)
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+#  # Mailtrap Configuration
+#  mail:
+#    host: sandbox.smtp.mailtrap.io
+#    port: 2525
+#    username: 600bf597e4c63c
+#    password: 120f3cc7f92c51
+#    properties:
+#      mail:
+#        smtp:
+#          auth: true
+#          starttls:
+#            enable: true
+
+  # Mail Configuration (Update with your credentials)
+  mail:
+    host: smtp.gmail.com
+    port: 587
+#    username: shaikhafif5@gmail.com
+#    password:
+    #MAIL_USERNAME=shaikhafif5@gmail.com MAIL_PASSWORD="awaz rqgl sows apkk" mvn spring-boot:run -Dmaven.test.skip=true
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
