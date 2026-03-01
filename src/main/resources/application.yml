@@ -17,7 +17,7 @@ spring:
       ddl-auto: create
     show-sql: false
     open-in-view: false
-    defer-datasource-initialization: true
+#    defer-datasource-initialization: true
 
   h2:
     console:
