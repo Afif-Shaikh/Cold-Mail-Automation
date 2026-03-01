@@ -4,6 +4,6 @@
     "buildCommand": "mvn clean package -DskipTests"
   },
   "deploy": {
-    "startCommand": "java -jar target/cold-mail-automation-1.0.0.jar"
+    "startCommand": "java -Xmx256m -Xms256m -Dserver.port=$PORT -jar target/cold-mail-automation-1.0.0.jar"
   }
 }

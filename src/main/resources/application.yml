@@ -1,34 +1,34 @@
-# Production Configuration
-# Safe to commit - uses environment variables
-
 server:
   port: ${PORT:8080}
 
 spring:
-  # In-memory Database for Railway
+  application:
+    name: cold-mail-automation
+
+  # In-memory Database
   datasource:
     url: jdbc:h2:mem:coldmail_db
     driver-class-name: org.h2.Driver
     username: sa
     password:
 
-  # JPA Settings
   jpa:
     hibernate:
       ddl-auto: create
     show-sql: false
+    open-in-view: false
+    defer-datasource-initialization: true
 
-  # H2 Console - Disabled in production
   h2:
     console:
       enabled: false
 
-  # Mail Configuration - From environment variables
+  # Mail Configuration
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: ${MAIL_USERNAME:test@gmail.com}
+    password: ${MAIL_PASSWORD:testpass}
     properties:
       mail:
         smtp:
@@ -39,9 +39,17 @@ spring:
           timeout: 5000
           writetimeout: 5000
 
-# Logging - Minimal for production
+# Actuator - Enable health endpoint
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
 logging:
   level:
+    root: INFO
     com.coldmail: INFO
-    org.springframework: WARN
-    root: WARN
