@@ -30,6 +30,7 @@ data/
 *.log
 logs/
 
+
 # OS Files
 .DS_Store
 Thumbs.db
@@ -39,6 +40,9 @@ Thumbs.db
 *.env
 application-local.yml
 application-prod.yml
+
+# Environment specific - DO NOT COMMIT
+src/main/resources/application-local.yml
 
 # Package files
 *.jar
