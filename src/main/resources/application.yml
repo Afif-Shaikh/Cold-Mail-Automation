@@ -42,15 +42,15 @@ resend:
 #          timeout: 5000
 #          writetimeout: 5000
 
-# Actuator - Enable health endpoint
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health
-  endpoint:
-    health:
-      show-details: always
+## Actuator - Enable health endpoint
+#management:
+#  endpoints:
+#    web:
+#      exposure:
+#        include: health
+#  endpoint:
+#    health:
+#      show-details: always
 
 logging:
   level:
