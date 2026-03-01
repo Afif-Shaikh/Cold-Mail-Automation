@@ -4,6 +4,6 @@
     "buildCommand": "mvn clean package -DskipTests"
   },
   "deploy": {
-    "startCommand": "java -Xmx250m -Xms150m -XX:+UseSerialGC -XX:MaxMetaspaceSize=50m -Xss256k -jar target/cold-mail-automation-1.0.0.jar --server.port=${PORT}"
+    "startCommand": "java -Xmx180m -Xms100m -XX:+UseSerialGC -XX:MaxMetaspaceSize=100m -XX:CompressedClassSpaceSize=30m -Xss256k -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -jar target/cold-mail-automation-1.0.0.jar --server.port=${PORT}"
   }
 }
