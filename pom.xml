@@ -25,6 +25,13 @@
     </properties>
 
     <dependencies>
+<!--        &lt;!&ndash; Resend Email API &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>com.resend</groupId>-->
+<!--            <artifactId>resend-java</artifactId>-->
+<!--            <version>2.2.1</version>-->
+<!--        </dependency>-->
+
         <!-- Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

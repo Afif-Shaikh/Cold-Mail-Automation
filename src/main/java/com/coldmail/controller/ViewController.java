@@ -3,7 +3,7 @@ package com.coldmail.controller;
 import com.coldmail.model.EmailLog;
 import com.coldmail.model.Recipient;
 import com.coldmail.model.Recipient.RecipientStatus;
-import com.coldmail.service.EmailService;
+import com.coldmail.service.ResendEmailService;
 import com.coldmail.service.EmailTemplateService;
 import com.coldmail.service.RecipientService;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ public class ViewController {
 
     private final EmailTemplateService templateService;
     private final RecipientService recipientService;
-    private final EmailService emailService;
+    private final ResendEmailService emailService;
 
     @GetMapping("/")
     public String dashboard(Model model) {

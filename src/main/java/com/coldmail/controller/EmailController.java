@@ -3,7 +3,7 @@ package com.coldmail.controller;
 import com.coldmail.dto.ApiResponse;
 import com.coldmail.dto.SendEmailRequest;
 import com.coldmail.model.EmailLog;
-import com.coldmail.service.EmailService;
+import com.coldmail.service.ResendEmailService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +16,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EmailController {
 
-    private final EmailService emailService;
+    private final ResendEmailService emailService;
 
     @PostMapping("/send")
     public ResponseEntity<ApiResponse<List<EmailLog>>> sendEmails(
