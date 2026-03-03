@@ -32,6 +32,13 @@
 <!--            <version>2.2.1</version>-->
 <!--        </dependency>-->
 
+        <!-- PostgreSQL for Production -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

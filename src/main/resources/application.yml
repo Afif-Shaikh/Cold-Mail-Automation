@@ -5,18 +5,21 @@ spring:
   application:
     name: cold-mail-automation
 
-  # In-memory Database
+  # Database Configuration
   datasource:
-    url: jdbc:h2:mem:coldmail_db
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:coldmail}
+    username: ${PGUSER:postgres}
+    password: ${PGPASSWORD:}
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
       ddl-auto: create
     show-sql: false
     open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 #    defer-datasource-initialization: true
 
   h2:
