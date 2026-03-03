@@ -5,6 +5,7 @@ import com.coldmail.model.EmailLog.EmailStatus;
 import com.coldmail.model.EmailTemplate;
 import com.coldmail.model.Recipient;
 import com.coldmail.model.Recipient.RecipientStatus;
+import com.coldmail.model.Resume;
 import com.coldmail.repository.EmailLogRepository;
 import com.coldmail.repository.RecipientRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,9 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +26,7 @@ public class ResendEmailService {
     private final EmailTemplateService templateService;
     private final RecipientRepository recipientRepository;
     private final EmailLogRepository emailLogRepository;
+    private final ResumeService resumeService;
 
     @Value("${resend.api-key:}")
     private String resendApiKey;
@@ -36,21 +36,31 @@ public class ResendEmailService {
 
     private static final String RESEND_API_URL = "https://api.resend.com/emails";
 
-    /**
-     * Send email to a single recipient using a template
-     */
     public EmailLog sendEmail(Long recipientId, Long templateId) {
+        return sendEmail(recipientId, templateId, null);
+    }
+
+    public EmailLog sendEmail(Long recipientId, Long templateId, Long resumeId) {
         Recipient recipient = recipientRepository.findById(recipientId)
                 .orElseThrow(() -> new RuntimeException("Recipient not found"));
         EmailTemplate template = templateService.getTemplateById(templateId);
 
-        return sendEmailToRecipient(recipient, template);
+        Resume resume = null;
+        if (resumeId != null) {
+            resume = resumeService.getResumeById(resumeId).orElse(null);
+        } else {
+            // Use default resume if available
+            resume = resumeService.getDefaultResume().orElse(null);
+        }
+
+        return sendEmailToRecipient(recipient, template, resume);
     }
 
-    /**
-     * Send emails to multiple recipients
-     */
     public List<EmailLog> sendBulkEmails(Long templateId, List<Long> recipientIds) {
+        return sendBulkEmails(templateId, recipientIds, null);
+    }
+
+    public List<EmailLog> sendBulkEmails(Long templateId, List<Long> recipientIds, Long resumeId) {
         EmailTemplate template = templateService.getTemplateById(templateId);
 
         List<Recipient> recipients;
@@ -60,15 +70,20 @@ public class ResendEmailService {
             recipients = recipientRepository.findAllById(recipientIds);
         }
 
+        Resume resume = null;
+        if (resumeId != null) {
+            resume = resumeService.getResumeById(resumeId).orElse(null);
+        } else {
+            resume = resumeService.getDefaultResume().orElse(null);
+        }
+
+        final Resume finalResume = resume;
         return recipients.stream()
-                .map(recipient -> sendEmailToRecipient(recipient, template))
+                .map(recipient -> sendEmailToRecipient(recipient, template, finalResume))
                 .toList();
     }
 
-    /**
-     * Core method to send email via Resend API using RestTemplate
-     */
-    private EmailLog sendEmailToRecipient(Recipient recipient, EmailTemplate template) {
+    private EmailLog sendEmailToRecipient(Recipient recipient, EmailTemplate template, Resume resume) {
         String processedSubject = processTemplate(template.getSubject(), recipient);
         String processedBody = processTemplate(template.getBody(), recipient);
 
@@ -83,21 +98,29 @@ public class ResendEmailService {
         try {
             RestTemplate restTemplate = new RestTemplate();
 
-            // Prepare headers
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.setBearerAuth(resendApiKey);
 
-            // Prepare request body
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("from", fromEmail);
             requestBody.put("to", new String[]{recipient.getEmail()});
             requestBody.put("subject", processedSubject);
             requestBody.put("html", processedBody);
 
+            // Add attachment if resume is provided
+            if (resume != null && resume.getData() != null) {
+                List<Map<String, String>> attachments = new ArrayList<>();
+                Map<String, String> attachment = new HashMap<>();
+                attachment.put("filename", resume.getOriginalFileName());
+                attachment.put("content", Base64.getEncoder().encodeToString(resume.getData()));
+                attachments.add(attachment);
+                requestBody.put("attachments", attachments);
+                log.info("Attaching resume: {}", resume.getOriginalFileName());
+            }
+
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
-            // Send request
             ResponseEntity<Map> response = restTemplate.exchange(
                     RESEND_API_URL,
                     HttpMethod.POST,
@@ -124,9 +147,6 @@ public class ResendEmailService {
         return emailLogRepository.save(emailLog);
     }
 
-    /**
-     * Replace placeholders in template with actual values
-     */
     private String processTemplate(String template, Recipient recipient) {
         if (template == null) return "";
 
