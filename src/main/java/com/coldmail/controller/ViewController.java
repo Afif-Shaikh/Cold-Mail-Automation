@@ -6,6 +6,7 @@ import com.coldmail.model.Recipient.RecipientStatus;
 import com.coldmail.service.ResendEmailService;
 import com.coldmail.service.EmailTemplateService;
 import com.coldmail.service.RecipientService;
+import com.coldmail.service.ResumeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -22,13 +23,13 @@ public class ViewController {
     private final EmailTemplateService templateService;
     private final RecipientService recipientService;
     private final ResendEmailService emailService;
+    private final ResumeService resumeService;
 
     @GetMapping("/")
     public String dashboard(Model model) {
         List<Recipient> allRecipients = recipientService.getAllRecipients();
         List<EmailLog> allLogs = emailService.getAllEmailLogs();
 
-        // Calculate stats
         Map<RecipientStatus, Long> statusCounts = allRecipients.stream()
                 .collect(Collectors.groupingBy(Recipient::getStatus, Collectors.counting()));
 
@@ -48,7 +49,6 @@ public class ViewController {
         model.addAttribute("totalEmails", allLogs.size());
         model.addAttribute("templateCount", templateService.getAllTemplates().size());
 
-        // Recent activity
         model.addAttribute("recentLogs", allLogs.stream()
                 .sorted((a, b) -> b.getSentAt().compareTo(a.getSentAt()))
                 .limit(5)
@@ -75,6 +75,13 @@ public class ViewController {
         model.addAttribute("templates", templateService.getAllTemplates());
         model.addAttribute("recipients", recipientService.getRecipientsByStatus(RecipientStatus.PENDING));
         model.addAttribute("allRecipients", recipientService.getAllRecipients());
+
+        // Add resumes
+        var resumes = resumeService.getAllResumes();
+        resumes.forEach(r -> r.setData(null)); // Don't send binary data to view
+        model.addAttribute("resumes", resumes);
+        model.addAttribute("defaultResume", resumeService.getDefaultResume().orElse(null));
+
         return "send";
     }
 
