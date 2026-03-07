@@ -157,6 +157,57 @@ public class ResendEmailService {
                 .replace("{{EMAIL}}", nullSafe(recipient.getEmail()));
     }
 
+    // Add these methods to the existing ResendEmailService class
+
+    /**
+     * Retry a single failed email
+     */
+    public EmailLog retryEmail(Long emailLogId) {
+        EmailLog oldLog = emailLogRepository.findById(emailLogId)
+                .orElseThrow(() -> new RuntimeException("Email log not found"));
+
+        if (oldLog.getStatus() != EmailStatus.FAILED) {
+            throw new RuntimeException("Can only retry failed emails");
+        }
+
+        Recipient recipient = oldLog.getRecipient();
+        EmailTemplate template = oldLog.getTemplate();
+
+        // Reset recipient status to pending
+        recipient.setStatus(Recipient.RecipientStatus.PENDING);
+        recipientRepository.save(recipient);
+
+        // Get default resume
+        Resume resume = resumeService.getDefaultResume().orElse(null);
+
+        return sendEmailToRecipient(recipient, template, resume);
+    }
+
+    /**
+     * Retry all failed emails
+     */
+    public List<EmailLog> retryAllFailed() {
+        List<EmailLog> failedLogs = emailLogRepository.findByStatus(EmailStatus.FAILED);
+
+        return failedLogs.stream()
+                .map(log -> {
+                    try {
+                        return retryEmail(log.getId());
+                    } catch (Exception e) {
+                        log.setErrorMessage("Retry failed: " + e.getMessage());
+                        return log;
+                    }
+                })
+                .toList();
+    }
+
+    /**
+     * Get count of failed emails
+     */
+    public long getFailedCount() {
+        return emailLogRepository.findByStatus(EmailStatus.FAILED).size();
+    }
+
     private String nullSafe(String value) {
         return value != null ? value : "";
     }
