@@ -19,6 +19,8 @@
         .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; }
         .modal-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
         .modal-header .btn-close { filter: invert(1); }
+        .bulk-actions { display: none; }
+        .bulk-actions.show { display: block; }
     </style>
 </head>
 <body>
@@ -37,6 +39,9 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">Recipients</h2>
         <div>
+            <button class="btn btn-outline-success me-2" onclick="exportCsv()">
+                <i class="bi bi-download me-2"></i>Export CSV
+            </button>
             <button class="btn btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#importModal">
                 <i class="bi bi-upload me-2"></i>Import CSV
             </button>
@@ -46,24 +51,71 @@
         </div>
     </div>
 
-    <!-- CSV Format Info -->
-    <div class="alert alert-info alert-dismissible fade show" role="alert">
-        <i class="bi bi-info-circle me-2"></i>
-        <strong>CSV Format:</strong> email, name, company, position, notes (first row should be header)
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <!-- Search & Filter Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="searchInput"
+                               placeholder="Search by name, email, or company..."
+                               onkeyup="debounceSearch()">
+                        <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="statusFilter" onchange="filterRecipients()">
+                        <option value="">All Status</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="SENT">Sent</option>
+                        <option value="REPLIED">Replied</option>
+                        <option value="INTERVIEW">Interview</option>
+                        <option value="REJECTED">Rejected</option>
+                        <option value="FAILED">Failed</option>
+                    </select>
+                </div>
+                <div class="col-md-3 text-end">
+                    <span class="text-muted" id="resultCount">Showing all recipients</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Actions Bar -->
+    <div class="alert alert-primary bulk-actions mb-3" id="bulkActionsBar">
+        <div class="d-flex justify-content-between align-items-center">
+            <span><strong id="selectedCount">0</strong> recipients selected</span>
+            <div>
+                <button class="btn btn-sm btn-outline-primary me-2" onclick="bulkUpdateStatus('PENDING')">
+                    Mark Pending
+                </button>
+                <button class="btn btn-sm btn-outline-success me-2" onclick="bulkUpdateStatus('SENT')">
+                    Mark Sent
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="bulkDelete()">
+                    <i class="bi bi-trash me-1"></i>Delete Selected
+                </button>
+            </div>
+        </div>
     </div>
 
     <div class="card">
         <div class="card-body">
-            <div th:if="${recipients == null or recipients.empty}" class="text-center text-muted py-5">
+            <div id="emptyState" class="text-center text-muted py-5" style="display: none;">
                 <i class="bi bi-people" style="font-size: 3rem;"></i>
-                <p class="mt-2">No recipients yet. Add your first recipient or import from CSV!</p>
+                <p class="mt-2">No recipients found.</p>
             </div>
 
-            <div class="table-responsive" th:if="${recipients != null and !recipients.empty}">
-                <table class="table table-hover">
+            <div class="table-responsive">
+                <table class="table table-hover" id="recipientsTable">
                     <thead>
                     <tr>
+                        <th width="40">
+                            <input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleSelectAll()">
+                        </th>
                         <th>Name</th>
                         <th>Email</th>
                         <th>Company</th>
@@ -72,8 +124,12 @@
                         <th>Actions</th>
                     </tr>
                     </thead>
-                    <tbody>
-                    <tr th:each="recipient : ${recipients}">
+                    <tbody id="recipientsBody">
+                    <tr th:each="recipient : ${recipients}" th:data-id="${recipient.id}">
+                        <td>
+                            <input type="checkbox" class="form-check-input row-checkbox"
+                                   th:value="${recipient.id}" onchange="updateBulkActions()">
+                        </td>
                         <td><strong th:text="${recipient.name} ?: 'N/A'">Name</strong></td>
                         <td th:text="${recipient.email}">Email</td>
                         <td th:text="${recipient.company} ?: '-'">Company</td>
@@ -158,24 +214,14 @@
                     <div class="alert alert-light border">
                         <h6><i class="bi bi-file-earmark-text me-2"></i>Expected CSV Format:</h6>
                         <code>email,name,company,position,notes</code>
-                        <hr>
-                        <small class="text-muted">
-                            • First row should be header (will be skipped)<br>
-                            • Email is required, other fields are optional<br>
-                            • Duplicate emails will be skipped
-                        </small>
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label">Select CSV File *</label>
                         <input type="file" class="form-control" id="csvFile" accept=".csv" required>
                     </div>
-
-                    <div class="mb-3">
-                        <a href="#" onclick="downloadSampleCsv()" class="text-decoration-none">
-                            <i class="bi bi-download me-1"></i>Download Sample CSV
-                        </a>
-                    </div>
+                    <a href="#" onclick="downloadSampleCsv()" class="text-decoration-none">
+                        <i class="bi bi-download me-1"></i>Download Sample CSV
+                    </a>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -195,8 +241,7 @@
                     <h5 class="modal-title">Import Results</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" id="importResultBody">
-                </div>
+                <div class="modal-body" id="importResultBody"></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" onclick="location.reload()">OK</button>
                 </div>
@@ -208,7 +253,178 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/app.js"></script>
 <script>
-    // CSV Import function
+    let searchTimeout;
+
+    // Debounce search
+    function debounceSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(filterRecipients, 300);
+    }
+
+    // Filter recipients
+    async function filterRecipients() {
+        const search = document.getElementById('searchInput').value;
+        const status = document.getElementById('statusFilter').value;
+
+        let url = '/api/recipients?';
+        if (search) url += `search=${encodeURIComponent(search)}&`;
+        if (status) url += `status=${status}`;
+
+        try {
+            const response = await fetch(url);
+            const result = await response.json();
+
+            if (result.success) {
+                renderRecipients(result.data);
+            }
+        } catch (error) {
+            console.error('Error filtering:', error);
+        }
+    }
+
+    // Render recipients table
+    function renderRecipients(recipients) {
+        const tbody = document.getElementById('recipientsBody');
+        const emptyState = document.getElementById('emptyState');
+        const resultCount = document.getElementById('resultCount');
+
+        if (recipients.length === 0) {
+            tbody.innerHTML = '';
+            emptyState.style.display = 'block';
+            resultCount.textContent = 'No recipients found';
+            return;
+        }
+
+        emptyState.style.display = 'none';
+        resultCount.textContent = `Showing ${recipients.length} recipient${recipients.length > 1 ? 's' : ''}`;
+
+        tbody.innerHTML = recipients.map(r => `
+            <tr data-id="${r.id}">
+                <td>
+                    <input type="checkbox" class="form-check-input row-checkbox"
+                           value="${r.id}" onchange="updateBulkActions()">
+                </td>
+                <td><strong>${r.name || 'N/A'}</strong></td>
+                <td>${r.email}</td>
+                <td>${r.company || '-'}</td>
+                <td>${r.position || '-'}</td>
+                <td>${getStatusBadge(r.status)}</td>
+                <td>
+                    <div class="dropdown d-inline">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Status</button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="updateStatus(${r.id}, 'PENDING')">PENDING</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="updateStatus(${r.id}, 'SENT')">SENT</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="updateStatus(${r.id}, 'REPLIED')">REPLIED</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="updateStatus(${r.id}, 'INTERVIEW')">INTERVIEW</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="updateStatus(${r.id}, 'REJECTED')">REJECTED</a></li>
+                        </ul>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="editRecipient(${r.id})"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteRecipient(${r.id})"><i class="bi bi-trash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function getStatusBadge(status) {
+        const badges = {
+            'PENDING': '<span class="badge bg-warning text-dark">PENDING</span>',
+            'SENT': '<span class="badge bg-success">SENT</span>',
+            'INTERVIEW': '<span class="badge bg-info">INTERVIEW</span>',
+            'REPLIED': '<span class="badge bg-primary">REPLIED</span>',
+            'FAILED': '<span class="badge bg-danger">FAILED</span>',
+            'REJECTED': '<span class="badge bg-secondary">REJECTED</span>'
+        };
+        return badges[status] || status;
+    }
+
+    function clearSearch() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('statusFilter').value = '';
+        filterRecipients();
+    }
+
+    // Select all checkbox
+    function toggleSelectAll() {
+        const selectAll = document.getElementById('selectAll').checked;
+        document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = selectAll);
+        updateBulkActions();
+    }
+
+    // Update bulk actions bar
+    function updateBulkActions() {
+        const checked = document.querySelectorAll('.row-checkbox:checked');
+        const bulkBar = document.getElementById('bulkActionsBar');
+        const countSpan = document.getElementById('selectedCount');
+
+        if (checked.length > 0) {
+            bulkBar.classList.add('show');
+            countSpan.textContent = checked.length;
+        } else {
+            bulkBar.classList.remove('show');
+        }
+    }
+
+    // Bulk delete
+    async function bulkDelete() {
+        const checked = document.querySelectorAll('.row-checkbox:checked');
+        const ids = Array.from(checked).map(cb => parseInt(cb.value));
+
+        if (ids.length === 0) return;
+
+        if (!confirm(`Are you sure you want to delete ${ids.length} recipient(s)?`)) return;
+
+        try {
+            const response = await fetch('/api/recipients/bulk', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(ids)
+            });
+
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error deleting recipients');
+            }
+        } catch (error) {
+            alert('Error: ' + error.message);
+        }
+    }
+
+    // Bulk update status
+    async function bulkUpdateStatus(status) {
+        const checked = document.querySelectorAll('.row-checkbox:checked');
+        const ids = Array.from(checked).map(cb => parseInt(cb.value));
+
+        if (ids.length === 0) return;
+
+        try {
+            const response = await fetch(`/api/recipients/bulk/status?status=${status}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(ids)
+            });
+
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error updating status');
+            }
+        } catch (error) {
+            alert('Error: ' + error.message);
+        }
+    }
+
+    // Export CSV
+    function exportCsv() {
+        const status = document.getElementById('statusFilter').value;
+        let url = '/api/csv/export';
+        if (status) url += `?status=${status}`;
+        window.location.href = url;
+    }
+
+    // Import CSV function
     async function importCsv() {
         const fileInput = document.getElementById('csvFile');
         const file = fileInput.files[0];
@@ -229,10 +445,8 @@
 
             const result = await response.json();
 
-            // Close import modal
             bootstrap.Modal.getInstance(document.getElementById('importModal')).hide();
 
-            // Show result
             let resultHtml = '';
             if (result.success) {
                 const data = result.data;
@@ -256,26 +470,6 @@
                         </div>
                     </div>
                 `;
-
-                if (data.errors && data.errors.length > 0) {
-                    resultHtml += `
-                        <hr>
-                        <h6 class="text-danger"><i class="bi bi-exclamation-circle me-2"></i>Errors:</h6>
-                        <ul class="small text-danger">
-                            ${data.errors.map(e => `<li>${e}</li>`).join('')}
-                        </ul>
-                    `;
-                }
-
-                if (data.skipped && data.skipped.length > 0) {
-                    resultHtml += `
-                        <h6 class="text-warning"><i class="bi bi-skip-forward me-2"></i>Skipped (duplicates):</h6>
-                        <ul class="small text-muted">
-                            ${data.skipped.slice(0, 10).map(s => `<li>${s}</li>`).join('')}
-                            ${data.skipped.length > 10 ? `<li>...and ${data.skipped.length - 10} more</li>` : ''}
-                        </ul>
-                    `;
-                }
             } else {
                 resultHtml = `
                     <div class="text-center text-danger">
@@ -298,8 +492,7 @@
     function downloadSampleCsv() {
         const csv = `email,name,company,position,notes
 hr@google.com,John Doe,Google,Software Engineer,Found on LinkedIn
-recruiter@meta.com,Jane Smith,Meta,Senior Developer,Referral from friend
-hiring@startup.com,Mike Johnson,Startup Inc,Full Stack Developer,Applied via website`;
+recruiter@meta.com,Jane Smith,Meta,Senior Developer,Referral from friend`;
 
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
@@ -307,7 +500,6 @@ hiring@startup.com,Mike Johnson,Startup Inc,Full Stack Developer,Applied via web
         a.href = url;
         a.download = 'sample_recipients.csv';
         a.click();
-        window.URL.revokeObjectURL(url);
     }
 </script>
 </body>

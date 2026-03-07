@@ -3,6 +3,10 @@ package com.coldmail.controller;
 import com.coldmail.dto.ApiResponse;
 import com.coldmail.dto.SendEmailRequest;
 import com.coldmail.model.EmailLog;
+import com.coldmail.model.EmailTemplate;
+import com.coldmail.model.Recipient;
+import com.coldmail.service.EmailTemplateService;
+import com.coldmail.service.RecipientService;
 import com.coldmail.service.ResendEmailService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +22,8 @@ import java.util.Map;
 public class EmailController {
 
     private final ResendEmailService emailService;
+    private final EmailTemplateService templateService;
+    private final RecipientService recipientService;
 
     @PostMapping("/send")
     public ResponseEntity<ApiResponse<List<EmailLog>>> sendEmails(
@@ -53,14 +59,12 @@ public class EmailController {
         return ResponseEntity.ok(ApiResponse.success(emailService.getEmailLogs(recipientId)));
     }
 
-    // NEW: Retry single failed email
     @PostMapping("/retry/{logId}")
     public ResponseEntity<ApiResponse<EmailLog>> retryEmail(@PathVariable Long logId) {
         EmailLog log = emailService.retryEmail(logId);
         return ResponseEntity.ok(ApiResponse.success("Email retry processed", log));
     }
 
-    // NEW: Retry all failed emails
     @PostMapping("/retry-all")
     public ResponseEntity<ApiResponse<Map<String, Object>>> retryAllFailed() {
         List<EmailLog> logs = emailService.retryAllFailed();
@@ -77,11 +81,39 @@ public class EmailController {
         ));
     }
 
-    // NEW: Get failed count
     @GetMapping("/failed-count")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getFailedCount() {
         return ResponseEntity.ok(ApiResponse.success(
                 Map.of("count", emailService.getFailedCount())
         ));
+    }
+
+    // Preview email with actual recipient data
+    @GetMapping("/preview")
+    public ResponseEntity<ApiResponse<Map<String, String>>> previewEmail(
+            @RequestParam Long templateId,
+            @RequestParam Long recipientId) {
+
+        EmailTemplate template = templateService.getTemplateById(templateId);
+        Recipient recipient = recipientService.getRecipientById(recipientId);
+
+        String subject = processTemplate(template.getSubject(), recipient);
+        String body = processTemplate(template.getBody(), recipient);
+
+        return ResponseEntity.ok(ApiResponse.success(Map.of(
+                "subject", subject,
+                "body", body,
+                "recipientEmail", recipient.getEmail(),
+                "recipientName", recipient.getName() != null ? recipient.getName() : ""
+        )));
+    }
+
+    private String processTemplate(String template, Recipient recipient) {
+        if (template == null) return "";
+        return template
+                .replace("{{NAME}}", recipient.getName() != null ? recipient.getName() : "")
+                .replace("{{COMPANY}}", recipient.getCompany() != null ? recipient.getCompany() : "")
+                .replace("{{POSITION}}", recipient.getPosition() != null ? recipient.getPosition() : "")
+                .replace("{{EMAIL}}", recipient.getEmail() != null ? recipient.getEmail() : "");
     }
 }

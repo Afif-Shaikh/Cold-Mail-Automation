@@ -16,6 +16,7 @@
     .sidebar .nav-link i { margin-right: 10px; }
     .main-content { margin-left: var(--sidebar-width); padding: 30px; }
     .card { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+    .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; }
   </style>
 </head>
 <body>
@@ -33,14 +34,19 @@
 <main class="main-content">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0">Email Logs</h2>
-    <span class="badge bg-secondary" th:text="'Total: ' + ${#lists.size(logs)}">0</span>
+    <div>
+      <span class="badge bg-secondary me-3" th:text="'Total: ' + ${#lists.size(logs)}">0</span>
+      <button class="btn btn-warning" onclick="retryAllFailed()" id="retryAllBtn" style="display: none;">
+        <i class="bi bi-arrow-repeat me-2"></i>Retry All Failed
+      </button>
+    </div>
   </div>
 
   <div class="card">
     <div class="card-body">
       <div th:if="${logs == null or logs.empty}" class="text-center text-muted py-5">
         <i class="bi bi-journal-text" style="font-size: 3rem;"></i>
-        <p class="mt-2">No emails sent yet.</p>
+        <p class="mt-2">No emails sent yet. <a href="/send">Send your first email!</a></p>
       </div>
 
       <div class="table-responsive" th:if="${logs != null and !logs.empty}">
@@ -52,29 +58,127 @@
             <th>Subject</th>
             <th>Status</th>
             <th>Sent At</th>
+            <th>Actions</th>
           </tr>
           </thead>
           <tbody>
-          <tr th:each="log, i : ${logs}">
+          <tr th:each="log, i : ${logs}" th:classappend="${log.status.name() == 'FAILED'} ? 'table-danger' : ''">
             <td th:text="${i.count}">1</td>
             <td>
               <strong th:text="${log.recipient.name} ?: 'N/A'">Name</strong><br>
               <small class="text-muted" th:text="${log.recipient.email}">email</small>
             </td>
-            <td th:text="${log.subject}">Subject</td>
             <td>
-              <span class="badge bg-success" th:if="${log.status.name() == 'SUCCESS'}">SUCCESS</span>
-              <span class="badge bg-danger" th:if="${log.status.name() == 'FAILED'}">FAILED</span>
+              <span th:text="${#strings.abbreviate(log.subject, 40)}">Subject</span>
+            </td>
+            <td>
+                                    <span class="badge bg-success" th:if="${log.status.name() == 'SUCCESS'}">
+                                        <i class="bi bi-check-circle me-1"></i>SUCCESS
+                                    </span>
+              <span class="badge bg-danger" th:if="${log.status.name() == 'FAILED'}">
+                                        <i class="bi bi-x-circle me-1"></i>FAILED
+                                    </span>
+              <small th:if="${log.status.name() == 'FAILED'}" class="d-block text-danger mt-1"
+                     th:text="${#strings.abbreviate(log.errorMessage, 50)}"></small>
             </td>
             <td th:text="${#temporals.format(log.sentAt, 'MMM dd, yyyy HH:mm')}">Date</td>
+            <td>
+              <button class="btn btn-sm btn-outline-info"
+                      th:onclick="'viewEmailDetails(' + ${log.id} + ', \'' + ${log.subject} + '\', `' + ${log.body} + '`)'">
+                <i class="bi bi-eye"></i>
+              </button>
+              <button th:if="${log.status.name() == 'FAILED'}"
+                      class="btn btn-sm btn-warning"
+                      th:onclick="'retryEmail(' + ${log.id} + ')'">
+                <i class="bi bi-arrow-repeat"></i> Retry
+              </button>
+            </td>
           </tr>
           </tbody>
         </table>
       </div>
     </div>
   </div>
+
+  <!-- Email Details Modal -->
+  <div class="modal fade" id="emailDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Email Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p><strong>Subject:</strong> <span id="detailSubject"></span></p>
+          <hr>
+          <div id="detailBody"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Check if there are failed emails and show retry all button
+  document.addEventListener('DOMContentLoaded', function() {
+      const failedBadges = document.querySelectorAll('.badge.bg-danger');
+      if (failedBadges.length > 0) {
+          document.getElementById('retryAllBtn').style.display = 'inline-block';
+      }
+  });
+
+  // View email details
+  function viewEmailDetails(id, subject, body) {
+      document.getElementById('detailSubject').textContent = subject;
+      document.getElementById('detailBody').innerHTML = body;
+      new bootstrap.Modal(document.getElementById('emailDetailsModal')).show();
+  }
+
+  // Retry single email
+  async function retryEmail(logId) {
+      if (!confirm('Retry sending this email?')) return;
+
+      try {
+          const response = await fetch(`/api/emails/retry/${logId}`, {
+              method: 'POST'
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+              alert(result.data.status === 'SUCCESS' ? 'Email sent successfully!' : 'Email still failed. Check logs.');
+              location.reload();
+          } else {
+              alert('Error: ' + result.message);
+          }
+      } catch (error) {
+          alert('Error: ' + error.message);
+      }
+  }
+
+  // Retry all failed emails
+  async function retryAllFailed() {
+      if (!confirm('Retry all failed emails?')) return;
+
+      try {
+          const response = await fetch('/api/emails/retry-all', {
+              method: 'POST'
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+              const data = result.data;
+              alert(`Retry complete!\nSuccess: ${data.success}\nFailed: ${data.failed}`);
+              location.reload();
+          } else {
+              alert('Error: ' + result.message);
+          }
+      } catch (error) {
+          alert('Error: ' + error.message);
+      }
+  }
+</script>
 </body>
 </html>
