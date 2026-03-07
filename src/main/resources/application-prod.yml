@@ -1,0 +1,31 @@
+# Production Configuration (PostgreSQL Database)
+server:
+  port: ${PORT:8080}
+
+spring:
+  # PostgreSQL Database
+  datasource:
+    url: jdbc:postgresql://${PGHOST}:${PGPORT}/${PGDATABASE}
+    username: ${PGUSER}
+    password: ${PGPASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  h2:
+    console:
+      enabled: false
+
+# Resend
+resend:
+  api-key: ${RESEND_API_KEY}
+  from-email: ${RESEND_FROM_EMAIL:onboarding@resend.dev}
+
+logging:
+  level:
+    root: INFO
+    com.coldmail: INFO

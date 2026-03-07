@@ -5,26 +5,6 @@ spring:
   application:
     name: cold-mail-automation
 
-  # Database Configuration
-  datasource:
-    url: jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:coldmail}
-    username: ${PGUSER:postgres}
-    password: ${PGPASSWORD:}
-    driver-class-name: org.postgresql.Driver
-
-  jpa:
-    hibernate:
-      ddl-auto: create
-    show-sql: false
-    open-in-view: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-#    defer-datasource-initialization: true
-
-  h2:
-    console:
-      enabled: false
 # Resend Email Configuration
 resend:
   api-key: ${RESEND_API_KEY:not-set}
