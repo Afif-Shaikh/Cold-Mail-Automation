@@ -78,18 +78,22 @@
               <span class="badge bg-danger" th:if="${log.status.name() == 'FAILED'}">
                                         <i class="bi bi-x-circle me-1"></i>FAILED
                                     </span>
-              <small th:if="${log.status.name() == 'FAILED'}" class="d-block text-danger mt-1"
+              <small th:if="${log.status.name() == 'FAILED' and log.errorMessage != null}"
+                     class="d-block text-danger mt-1"
                      th:text="${#strings.abbreviate(log.errorMessage, 50)}"></small>
             </td>
             <td th:text="${#temporals.format(log.sentAt, 'MMM dd, yyyy HH:mm')}">Date</td>
             <td>
-              <button class="btn btn-sm btn-outline-info"
-                      th:onclick="'viewEmailDetails(' + ${log.id} + ', \'' + ${log.subject} + '\', `' + ${log.body} + '`)'">
+              <!-- Use data attributes instead of onclick with strings -->
+              <button class="btn btn-sm btn-outline-info view-details-btn"
+                      th:data-id="${log.id}"
+                      th:data-subject="${log.subject}"
+                      th:data-body="${log.body}">
                 <i class="bi bi-eye"></i>
               </button>
               <button th:if="${log.status.name() == 'FAILED'}"
-                      class="btn btn-sm btn-warning"
-                      th:onclick="'retryEmail(' + ${log.id} + ')'">
+                      class="btn btn-sm btn-warning retry-btn"
+                      th:data-id="${log.id}">
                 <i class="bi bi-arrow-repeat"></i> Retry
               </button>
             </td>
@@ -126,12 +130,29 @@
       if (failedBadges.length > 0) {
           document.getElementById('retryAllBtn').style.display = 'inline-block';
       }
+
+      // Attach click handlers for view details buttons
+      document.querySelectorAll('.view-details-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+              const subject = this.getAttribute('data-subject');
+              const body = this.getAttribute('data-body');
+              viewEmailDetails(subject, body);
+          });
+      });
+
+      // Attach click handlers for retry buttons
+      document.querySelectorAll('.retry-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+              const logId = this.getAttribute('data-id');
+              retryEmail(logId);
+          });
+      });
   });
 
   // View email details
-  function viewEmailDetails(id, subject, body) {
-      document.getElementById('detailSubject').textContent = subject;
-      document.getElementById('detailBody').innerHTML = body;
+  function viewEmailDetails(subject, body) {
+      document.getElementById('detailSubject').textContent = subject || '';
+      document.getElementById('detailBody').innerHTML = body || '';
       new bootstrap.Modal(document.getElementById('emailDetailsModal')).show();
   }
 
@@ -140,7 +161,7 @@
       if (!confirm('Retry sending this email?')) return;
 
       try {
-          const response = await fetch(`/api/emails/retry/${logId}`, {
+          const response = await fetch('/api/emails/retry/' + logId, {
               method: 'POST'
           });
 
@@ -170,7 +191,7 @@
 
           if (result.success) {
               const data = result.data;
-              alert(`Retry complete!\nSuccess: ${data.success}\nFailed: ${data.failed}`);
+              alert('Retry complete!\nSuccess: ' + data.success + '\nFailed: ' + data.failed);
               location.reload();
           } else {
               alert('Error: ' + result.message);
