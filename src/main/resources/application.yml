@@ -5,36 +5,6 @@ spring:
   application:
     name: cold-mail-automation
 
-# Resend Email Configuration
-resend:
-  api-key: ${RESEND_API_KEY:not-set}
-  from-email: ${RESEND_FROM_EMAIL:onboarding@resend.dev}
-  # Mail Configuration
-#  mail:
-#    host: smtp.gmail.com
-#    port: 587
-#    username: ${MAIL_USERNAME:test@gmail.com}
-#    password: ${MAIL_PASSWORD:testpass}
-#    properties:
-#      mail:
-#        smtp:
-#          auth: true
-#          starttls:
-#            enable: true
-#          connectiontimeout: 5000
-#          timeout: 5000
-#          writetimeout: 5000
-
-## Actuator - Enable health endpoint
-#management:
-#  endpoints:
-#    web:
-#      exposure:
-#        include: health
-#  endpoint:
-#    health:
-#      show-details: always
-
 logging:
   level:
     root: INFO

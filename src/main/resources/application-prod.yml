@@ -20,10 +20,16 @@ spring:
     console:
       enabled: false
 
+# Email Configuration
+email:
+  provider: ${EMAIL_PROVIDER:brevo}
+  api-key: ${EMAIL_API_KEY}
+  from-email: ${EMAIL_FROM}
+  from-name: ${EMAIL_FROM_NAME:Cold Mail App}
 # Resend
-resend:
-  api-key: ${RESEND_API_KEY}
-  from-email: ${RESEND_FROM_EMAIL:onboarding@resend.dev}
+#resend:
+#  api-key: ${RESEND_API_KEY}
+#  from-email: ${RESEND_FROM_EMAIL:onboarding@resend.dev}
 
 logging:
   level:
