@@ -63,4 +63,34 @@ public class RecipientService {
     public void deleteRecipient(Long id) {
         recipientRepository.deleteById(id);
     }
+
+    // NEW: Search recipients
+    public List<Recipient> searchRecipients(String search, RecipientStatus status) {
+        if (search == null || search.trim().isEmpty()) {
+            if (status != null) {
+                return recipientRepository.findByStatus(status);
+            }
+            return recipientRepository.findAll();
+        }
+
+        if (status != null) {
+            return recipientRepository.searchByStatus(search.trim(), status);
+        }
+        return recipientRepository.search(search.trim());
+    }
+
+    // NEW: Bulk delete
+    public int bulkDelete(List<Long> ids) {
+        List<Recipient> recipients = recipientRepository.findAllByIdIn(ids);
+        recipientRepository.deleteAll(recipients);
+        return recipients.size();
+    }
+
+    // NEW: Bulk update status
+    public int bulkUpdateStatus(List<Long> ids, RecipientStatus status) {
+        List<Recipient> recipients = recipientRepository.findAllByIdIn(ids);
+        recipients.forEach(r -> r.setStatus(status));
+        recipientRepository.saveAll(recipients);
+        return recipients.size();
+    }
 }

@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/recipients")
@@ -22,10 +23,9 @@ public class RecipientController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<Recipient>>> getAllRecipients(
-            @RequestParam(required = false) RecipientStatus status) {
-        List<Recipient> recipients = status != null
-                ? recipientService.getRecipientsByStatus(status)
-                : recipientService.getAllRecipients();
+            @RequestParam(required = false) RecipientStatus status,
+            @RequestParam(required = false) String search) {
+        List<Recipient> recipients = recipientService.searchRecipients(search, status);
         return ResponseEntity.ok(ApiResponse.success(recipients));
     }
 
@@ -62,5 +62,28 @@ public class RecipientController {
     public ResponseEntity<ApiResponse<Void>> deleteRecipient(@PathVariable Long id) {
         recipientService.deleteRecipient(id);
         return ResponseEntity.ok(ApiResponse.success("Recipient deleted successfully", null));
+    }
+
+    // NEW: Bulk delete
+    @DeleteMapping("/bulk")
+    public ResponseEntity<ApiResponse<Map<String, Integer>>> bulkDelete(
+            @RequestBody List<Long> ids) {
+        int deleted = recipientService.bulkDelete(ids);
+        return ResponseEntity.ok(ApiResponse.success(
+                deleted + " recipients deleted",
+                Map.of("deleted", deleted)
+        ));
+    }
+
+    // NEW: Bulk update status
+    @PatchMapping("/bulk/status")
+    public ResponseEntity<ApiResponse<Map<String, Integer>>> bulkUpdateStatus(
+            @RequestBody List<Long> ids,
+            @RequestParam RecipientStatus status) {
+        int updated = recipientService.bulkUpdateStatus(ids, status);
+        return ResponseEntity.ok(ApiResponse.success(
+                updated + " recipients updated",
+                Map.of("updated", updated)
+        ));
     }
 }
